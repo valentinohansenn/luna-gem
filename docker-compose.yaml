@@ -1,0 +1,17 @@
+services:
+   bot:
+      build: .
+      container_name: wrap-up-bot
+      restart: unless-stopped
+      env_file:
+         - .env
+      environment:
+         - NODE_ENV=development
+         - DEBUG=*
+      volumes:
+         - .:/usr/src/wrap-up-bot
+         - /usr/src/wrap-up-bot/node_modules
+         - /usr/src/wrap-up-bot/dist
+      tty: true
+      stdin_open: true
+      command: node --trace-warnings dist/index.js
