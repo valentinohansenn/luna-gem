@@ -37,31 +37,31 @@ client.commands = new Collection()
 client.cooldowns = new Collection()
 
 // Load commands
-console.log("Loading commands...")
-const foldersPath = path.join(__dirname, "commands")
-const commandFolders = fs.readdirSync(foldersPath)
-console.log(`Found command folders: ${commandFolders.join(", ")}`)
+// console.log("Loading commands...")
+// const foldersPath = path.join(__dirname, "commands")
+// const commandFolders = fs.readdirSync(foldersPath)
+// console.log(`Found command folders: ${commandFolders.join(", ")}`)
 
-for (const folder of commandFolders) {
-	const commandsPath = path.join(foldersPath, folder)
-	const commandFiles = fs
-		.readdirSync(commandsPath)
-		.filter((file) => file.endsWith(".js")) // Note: changed from .ts to .js
-	console.log(`Loading commands from ${folder}: ${commandFiles.join(", ")}`)
+// for (const folder of commandFolders) {
+// 	const commandsPath = path.join(foldersPath, folder)
+// 	const commandFiles = fs
+// 		.readdirSync(commandsPath)
+// 		.filter((file) => file.endsWith(".js")) // Note: changed from .ts to .js
+// 	console.log(`Loading commands from ${folder}: ${commandFiles.join(", ")}`)
 
-	for (const file of commandFiles) {
-		const filePath = path.join(commandsPath, file)
-		const command = require(filePath)
-		if ("data" in command && "execute" in command) {
-			client.commands.set(command.data.name, command)
-			console.log(`Loaded command: ${command.data.name}`)
-		} else {
-			console.log(
-				`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
-			)
-		}
-	}
-}
+// 	for (const file of commandFiles) {
+// 		const filePath = path.join(commandsPath, file)
+// 		const command = require(filePath)
+// 		if ("data" in command && "execute" in command) {
+// 			client.commands.set(command.data.name, command)
+// 			console.log(`Loaded command: ${command.data.name}`)
+// 		} else {
+// 			console.log(
+// 				`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
+// 			)
+// 		}
+// 	}
+// }
 
 // Load events
 console.log("\nLoading events...")

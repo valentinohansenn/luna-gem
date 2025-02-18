@@ -1,1 +1,0 @@
-{"version":3,"file":"hey.js","sourceRoot":"","sources":["../../../commands/utility/hey.ts"],"names":[],"mappings":";;AAAA,2CAGmB;AAEnB,MAAM,CAAC,OAAO,GAAG;IAChB,IAAI,EAAE,IAAI,gCAAmB,EAAE;SAC7B,OAAO,CAAC,KAAK,CAAC;SACd,cAAc,CAAC,iCAAiC,CAAC;IACnD,KAAK,CAAC,OAAO,CAAC,WAAwC;QACrD,MAAM,WAAW,CAAC,KAAK,CAAC,sCAAsC,CAAC,CAAA;IAChE,CAAC;CACD,CAAA"}
