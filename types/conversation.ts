@@ -1,4 +1,4 @@
 export interface Conversation {
-	role: "system" | "user"
-	content: string
+   role: "system" | "user" | "assistant"
+   content: string
 }

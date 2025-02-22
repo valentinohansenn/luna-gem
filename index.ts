@@ -1,7 +1,56 @@
-import fs from "node:fs"
-import path from "node:path"
 import dotenv from "dotenv"
-import { Client, Collection, GatewayIntentBits } from "discord.js"
+import { Client, Collection, Events, GatewayIntentBits } from "discord.js"
+import { AIMessage, HumanMessage } from "@langchain/core/messages"
+import { ChatOpenAI } from "@langchain/openai"
+import { TavilySearchResults } from "@langchain/community/tools/tavily_search"
+import { ToolNode } from "@langchain/langgraph/prebuilt"
+import {
+	MemorySaver,
+	MessagesAnnotation,
+	StateGraph,
+} from "@langchain/langgraph"
+import { RunnableConfig } from "@langchain/core/runnables"
+
+// Load environment variables from .env file
+console.log("Loading environment...")
+dotenv.config()
+
+const checkpointer = new MemorySaver()
+const tools = [new TavilySearchResults({ maxResults: 3 })]
+const toolNode = new ToolNode(tools)
+
+const llm = new ChatOpenAI({
+	model: "gpt-4o-mini",
+	temperature: 0.3,
+}).bindTools(tools)
+
+function shouldContinue({ messages }: typeof MessagesAnnotation.State) {
+	const lastMessage = messages[messages.length - 1] as AIMessage
+
+	if (lastMessage.tool_calls?.length) {
+		return "tools"
+	}
+
+	return "__end__"
+}
+
+async function callModel(
+	state: typeof MessagesAnnotation.State,
+	config?: RunnableConfig
+) {
+	const response = await llm.invoke(state.messages, config)
+	return { messages: [response] }
+}
+
+// Define a graph workflow for the agent to understand
+const workflow = new StateGraph(MessagesAnnotation)
+	.addNode("agent", callModel)
+	.addEdge("__start__", "agent")
+	.addNode("tools", toolNode)
+	.addEdge("tools", "agent")
+	.addConditionalEdges("agent", shouldContinue)
+
+const agent = workflow.compile({ checkpointer })
 
 // Add initial logging
 console.log("=== Bot Initialization ===")
@@ -12,10 +61,6 @@ declare module "discord.js" {
 		cooldowns: Collection<any, any>
 	}
 }
-
-// Load environment variables from .env file
-console.log("Loading environment...")
-dotenv.config()
 
 if (!process.env.DISCORD_TOKEN) {
 	console.error("Please provide a valid Discord bot token.")
@@ -36,57 +81,40 @@ const client = new Client({
 client.commands = new Collection()
 client.cooldowns = new Collection()
 
-// Load commands
-// console.log("Loading commands...")
-// const foldersPath = path.join(__dirname, "commands")
-// const commandFolders = fs.readdirSync(foldersPath)
-// console.log(`Found command folders: ${commandFolders.join(", ")}`)
+client.on(Events.ClientReady, (readyClient) => {
+	console.log(`Logged in as ${readyClient.user.tag}!`)
+})
 
-// for (const folder of commandFolders) {
-// 	const commandsPath = path.join(foldersPath, folder)
-// 	const commandFiles = fs
-// 		.readdirSync(commandsPath)
-// 		.filter((file) => file.endsWith(".js")) // Note: changed from .ts to .js
-// 	console.log(`Loading commands from ${folder}: ${commandFiles.join(", ")}`)
+client.on(Events.MessageCreate, async (message) => {
+	console.log(`Message received: ${message.content}`)
 
-// 	for (const file of commandFiles) {
-// 		const filePath = path.join(commandsPath, file)
-// 		const command = require(filePath)
-// 		if ("data" in command && "execute" in command) {
-// 			client.commands.set(command.data.name, command)
-// 			console.log(`Loaded command: ${command.data.name}`)
-// 		} else {
-// 			console.log(
-// 				`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
-// 			)
-// 		}
-// 	}
-// }
+	if (!message.content.startsWith("!gem")) return
 
-// Load events
-console.log("\nLoading events...")
-const eventsPath = path.join(__dirname, "events")
-const eventFiles = fs
-	.readdirSync(eventsPath)
-	.filter((file) => file.endsWith(".js"))
-console.log(`Found event files: ${eventFiles.join(", ")}`)
+	// Check other conditions
+	if (message.author.bot) return
 
-for (const file of eventFiles) {
-	const filePath = path.join(eventsPath, file)
-	const event = require(filePath)
-	if (event.once) {
-		client.once(event.name, (...args) => {
-			console.log(`Executing once event: ${event.name}`)
-			event.execute(...args)
-		})
-	} else {
-		client.on(event.name, (...args) => {
-			console.log(`Executing event: ${event.name}`)
-			event.execute(...args)
-		})
+	// Extract the actual message (remove !gem prefix and trim)
+	const userMessage = message.content.slice(4).trim()
+
+	// If no message after !gem, return
+	if (!userMessage) return
+
+	let config = {
+		configurable: { thread_id: `conversation-${message.channel.id}` },
 	}
-	console.log(`Loaded event: ${event.name}`)
-}
+
+	await message.channel.sendTyping()
+
+	const res = await agent.invoke(
+		{
+			messages: [new HumanMessage(userMessage)],
+		},
+		config
+	)
+
+	const reply = res.messages[res.messages.length - 1].content
+	message.reply(reply.toString())
+})
 
 // Login
 console.log("\nAttempting to log in...")

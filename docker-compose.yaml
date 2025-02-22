@@ -1,7 +1,7 @@
 services:
    bot:
       build: .
-      container_name: wrap-up-bot
+      container_name: chat-discord-bot
       restart: unless-stopped
       env_file:
          - .env
@@ -9,9 +9,9 @@ services:
          - NODE_ENV=development
          - DEBUG=*
       volumes:
-         - .:/usr/src/wrap-up-bot
-         - /usr/src/wrap-up-bot/node_modules
-         - /usr/src/wrap-up-bot/dist
+         - .:/usr/src/chat-discord-bot
+         - /usr/src/chat-discord-bot/node_modules
+         - /usr/src/chat-discord-bot/dist
       tty: true
       stdin_open: true
       command: node --trace-warnings dist/index.js

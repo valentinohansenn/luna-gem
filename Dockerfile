@@ -1,6 +1,6 @@
 FROM node:20-slim
 
-WORKDIR /usr/src/wrap-up-bot
+WORKDIR /usr/src/chat-discord-bot
 
 # Copy package files
 COPY package*.json ./
